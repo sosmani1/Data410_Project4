@@ -165,9 +165,10 @@ As per the official documentation of Lightgbm. The algorithm is a gradient boost
 * Support of parallel, distributed, and GPU learning.
 * Capable of handling large-scale data.
 
-On this experiment run by students at MIT the LightGBM is clearly the best result. The experiment was based on data from numerous financial instititions. More about this can be found here: 
+On this experiment run by students at MIT the LightGBM is clearly the best result. The experiment was based on data from numerous financial instititions. 
 
-[LightGBM Experiments
+
+More about this can be found here: [LightGBM Experiments
 ](!%5BLINK%5D:%20https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment)
 
 
