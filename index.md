@@ -174,6 +174,12 @@ More about this can be found here: [LightGBM Experiments
 
 ![Screen Shot 2022-03-06 at 9 21 47 PM](https://user-images.githubusercontent.com/78623027/156956906-b05189f3-d700-4402-9012-01e76af99bf0.png)
 
+Futhermore as Dr. Brownlee, from Swinebure University, suggests LightGBM extends the gradient boosting algorithm by adding a type of automatic feature selection as well as focusing on boosting examples with larger gradients. This can result in a dramatic speedup of training and improved predictive performance.
+
+As such, LightGBM has become a de facto algorithm for machine learning competitions when working with tabular data for regression and classification predictive modeling tasks. As such, it owns a share of the blame for the increased popularity and wider adoption of gradient boosting methods in general, along with Extreme Gradient Boosting (XGBoost).
+
+Let's begin the coding!
+
 Let's import the lightgbm package
 
 ```
