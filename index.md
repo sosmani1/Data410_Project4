@@ -1,37 +1,197 @@
-## Welcome to GitHub Pages
+# Advanced Machine Learning Project 4
 
-You can use the [editor on GitHub](https://github.com/sosmani1/Data410_Project4/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+### Part 1: Here I create my own multiple boosting algortihm and apply it to combinations of different regressors (for example you can boost regressor 1 with regressor 2 a couple of times) on the "Concrete Compressive Strength" dataset. Then I will show what was the combination that achieved the best cross-validated results.
 
-### Markdown
+Let's import some useful information to process the project. 
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+```
+import numpy as np
+import pandas as pd
+from scipy.linalg import lstsq
+from scipy.sparse.linalg import lsmr
+import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d, griddata, LinearNDInterpolator, NearestNDInterpolator
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import KFold, train_test_split as tts
+from sklearn.metrics import mean_squared_error as mse
+from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
+import matplotlib.pyplot as plt
+from matplotlib import pyplot
+```
+Now I update the algorithms for repeated boosting:
 
-```markdown
-Syntax highlighted code block
+```
+# Tricubic Kernel
+def Tricubic(x):
+  if len(x.shape) == 1:
+    x = x.reshape(-1,1)
+  d = np.sqrt(np.sum(x**2,axis=1))
+  return np.where(d>1,0,70/81*(1-d**3)**3)
 
-# Header 1
-## Header 2
-### Header 3
+# Quartic Kernel
+def Quartic(x):
+  if len(x.shape) == 1:
+    x = x.reshape(-1,1)
+  d = np.sqrt(np.sum(x**2,axis=1))
+  return np.where(d>1,0,15/16*(1-d**2)**2)
 
-- Bulleted
-- List
+# Epanechnikov Kernel
+def Epanechnikov(x):
+  if len(x.shape) == 1:
+    x = x.reshape(-1,1)
+  d = np.sqrt(np.sum(x**2,axis=1))
+  return np.where(d>1,0,3/4*(1-d**2)) 
+```
+Defining the kernel local regression model
 
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
 ```
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+def lw_reg(X, y, xnew, kern, tau, intercept):
+    # tau is called bandwidth K((x-x[i])/(2*tau))
+    n = len(X) # the number of observations
+    yest = np.zeros(n)
 
-### Jekyll Themes
+    if len(y.shape)==1: # here we make column vectors
+      y = y.reshape(-1,1)
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/sosmani1/Data410_Project4/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+    if len(X.shape)==1:
+      X = X.reshape(-1,1)
+    
+    if intercept:
+      X1 = np.column_stack([np.ones((len(X),1)),X])
+    else:
+      X1 = X
 
-### Support or Contact
+    w = np.array([kern((X - X[i])/(2*tau)) for i in range(n)]) # here we compute n vectors of weights
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+    #Looping through all X-points
+    for i in range(n):          
+        W = np.diag(w[:,i])
+        b = np.transpose(X1).dot(W).dot(y)
+        A = np.transpose(X1).dot(W).dot(X1)
+        beta, res, rnk, s = lstsq(A, b)
+        yest[i] = np.dot(X1[i],beta)
+    if X.shape[1]==1:
+      f = interp1d(X.flatten(),yest,fill_value='extrapolate')
+    else:
+      f = LinearNDInterpolator(X, yest)
+    output = f(xnew) # the output may have NaN's where the data points from xnew are outside the convex hull of X
+    if sum(np.isnan(output))>0:
+      g = NearestNDInterpolator(X,y.ravel()) 
+      # output[np.isnan(output)] = g(X[np.isnan(output)])
+      output[np.isnan(output)] = g(xnew[np.isnan(output)])
+    return output
+    
+def boosted_lwr(X, y, xnew, kern, tau, intercept, model_boosting, nboost):
+  Fx = lw_reg(X,y,X,kern,tau,intercept) # we need this for training the Decision Tree
+  output = booster(X,y,xnew,kern,tau,model_boosting,nboost)
+  return output 
+ 
+def booster(X,y,xnew,kern,tau,model_boosting,nboost):
+  Fx = lw_reg(X,y,X,kern,tau,True)
+  Fx_new = lw_reg(X,y,xnew,kern,tau,True)
+  new_y = y - Fx
+  output = Fx
+  output_new = Fx_new
+  for i in range(nboost):
+    model_boosting.fit(X,new_y)
+    output += model_boosting.predict(X)
+    output_new += model_boosting.predict(xnew)
+    new_y = y - output
+  return output_new
+
+concrete = pd.read_csv('concrete.csv')
+
+model_boosting = RandomForestRegressor(n_estimators=100,max_depth=3)
+
+train = concrete.drop(['strength'], axis = 1)
+train_labels = concrete.strength
+
+```
+
+Now I will use regularization for feature selection
+
+```
+
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+model = Lasso(alpha=0.1)
+model.fit(train,train_labels)
+model.coef_
+
+```
+array([ 0.11965545,  0.10367264,  0.08783123, -0.1516849 ,  0.28548338,
+        0.01770773,  0.01990805,  0.11417497])
+        
+```
+
+features = np.array(train.columns)
+print("All features:")
+print(features)
+```
+
+All features:
+['cement' 'slag' 'ash' 'water' 'superplastic' 'coarseagg' 'fineagg' 'age']
+
+```
+X = concrete[['superplastic', 'water']].values
+y = concrete['strength'].values
+from sklearn import preprocessing
+from sklearn import utils
+
+lab_enc = preprocessing.LabelEncoder()
+encoded = lab_enc.fit_transform(y)
+
+scale = StandardScaler()
+
+xscaled = scale.fit_transform(X)
+
+```
+
+### Part 2: I give a background on the LightGBM algorithm and include a write-up that explains the method. Then I apply the method to the "Concrete Compressive Strength" dataset. 
+
+
+LightGBM: LightGBM is a gradient boosting function using a tree based learning algorithm. It grows the trees vertically, while other tree based algorithms grow the trees horizontally.
+
+Let's import the lightgbm package
+
+```
+import lightgbm as lgb
+```
+We want more nested cross-validations
+
+```
+mse_blwr = []
+
+mse_lgb = []
+
+for i in [123]:
+  kf = KFold(n_splits=10,shuffle=True,random_state=i)
+  # this is the Cross-Validation Loop
+  for idxtrain, idxtest in kf.split(X):
+    xtrain = X[idxtrain]
+    ytrain = y[idxtrain]
+    ytest = y[idxtest]
+    xtest = X[idxtest]
+    xtrain = scale.fit_transform(xtrain)
+    xtest = scale.transform(xtest)
+    dat_train = np.concatenate([xtrain,ytrain.reshape(-1,1)],axis=1)
+    dat_test = np.concatenate([xtest,ytest.reshape(-1,1)],axis=1)
+    yhat_blwr = boosted_lwr(xtrain,ytrain, xtest,Epanechnikov,0.9,True,model_boosting,2)
+    #yhat_blwr = boosted_lwr(xtrain,ytrain,xtest,Tricubic,1,True,model_boosting,2)
+    clf = lgb.LGBMClassifier()
+    clf.fit(xtrain, ytrain.astype('int'))
+    yhat_lgb =clf.predict(xtest)
+    mse_blwr.append(mse(ytest,yhat_blwr))
+    mse_lgb.append(mse(ytest,yhat_lgb))
+print('The Cross-validated Mean Squared Error for Boosted LWR is : '+str(np.mean(mse_blwr)))
+print('The Cross-validated Mean Squared Error for LGB is : '+str(np.mean(mse_lgb)))
+```
+
+The Cross-validated Mean Squared Error for Boosted LWR is : 199.14032290938763
+The Cross-validated Mean Squared Error for LGB is : 284.03590233009703
+
+Repeated Boosting is the best method, the cross validated MSE is lowest.
+
