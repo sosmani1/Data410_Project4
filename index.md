@@ -155,6 +155,19 @@ xscaled = scale.fit_transform(X)
 
 LightGBM: LightGBM is a gradient boosting function using a tree based learning algorithm. It grows the trees vertically, while other tree based algorithms grow the trees horizontally.
 
+As per the official documentation of Lightgbm. The algorithm is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
+
+* Faster training speed and higher efficiency.
+* Lower memory usage.
+* Better accuracy.
+* Support of parallel, distributed, and GPU learning.
+* Capable of handling large-scale data.
+
+On this experiment run by students at MIT the LightGBM is clearly the best result. The experiment was based on data from numerous financial instititions. More about this can be found here: https://github.com/microsoft/LightGBM/blob/master/docs/Experiments.rst#comparison-experiment
+
+
+![Screen Shot 2022-03-06 at 9 21 47 PM](https://user-images.githubusercontent.com/78623027/156956906-b05189f3-d700-4402-9012-01e76af99bf0.png)
+
 Let's import the lightgbm package
 
 ```
