@@ -152,6 +152,8 @@ xscaled = scale.fit_transform(X)
 
 ### Part 2: I give a background on the LightGBM algorithm and include a write-up that explains the method. Then I apply the method to the "Concrete Compressive Strength" dataset. 
 
+![images](https://user-images.githubusercontent.com/78623027/156957252-c260f757-733d-4b33-96f1-857e31bc90a0.png)
+
 
 LightGBM: LightGBM is a gradient boosting function using a tree based learning algorithm. It grows the trees vertically, while other tree based algorithms grow the trees horizontally.
 
@@ -203,8 +205,8 @@ print('The Cross-validated Mean Squared Error for Boosted LWR is : '+str(np.mean
 print('The Cross-validated Mean Squared Error for LGB is : '+str(np.mean(mse_lgb)))
 ```
 
-The Cross-validated Mean Squared Error for Boosted LWR is : 199.14032290938763
-The Cross-validated Mean Squared Error for LGB is : 284.03590233009703
+### The Cross-validated Mean Squared Error for Boosted LWR is : 199.14032290938763
+### The Cross-validated Mean Squared Error for LGB is : 284.03590233009703
 
-Repeated Boosting is the best method, the cross validated MSE is lowest.
+## Repeated Boosting is the best method, the cross validated MSE is lowest.
 
